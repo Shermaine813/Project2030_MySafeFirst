@@ -1,5 +1,4 @@
 import express from "express";
-import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -18,24 +17,30 @@ async function startServer() {
   });
 
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { 
         middlewareMode: true,
         host: '0.0.0.0',
-        port: 3000 // In dev, we always target 3000 as per instructions
+        port: 3000 
       },
       appType: "spa",
     });
     app.use(vite.middlewares);
     console.log(`Development server running at http://0.0.0.0:3000`);
   } else {
-    const distPath = path.join(process.cwd(), "dist");
+    const distPath = path.resolve(__dirname, "dist");
     app.use(express.static(distPath));
+    
+    // Specifically handle /assets route if needed, though express.static should cover it
+    app.use('/assets', express.static(path.join(distPath, 'assets')));
+
     // Serve index.html for all other routes (SPA fallback)
     app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+      res.sendFile(path.resolve(distPath, "index.html"));
     });
     console.log(`Production server running at http://0.0.0.0:${PORT}`);
+    console.log(`Serving static files from: ${distPath}`);
   }
 
   app.listen(PORT, "0.0.0.0", () => {

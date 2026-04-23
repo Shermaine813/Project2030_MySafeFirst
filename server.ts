@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -16,7 +17,32 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV === "production") {
+    const distPath = path.resolve(__dirname, "dist");
+    
+    // Debug logging to help identify path issues in Cloud Run
+    console.log(`Production mode: serving from ${distPath}`);
+    
+    if (!fs.existsSync(distPath)) {
+      console.error(`ERROR: Static directory not found: ${distPath}`);
+      console.log(`Current directory contents: ${fs.readdirSync(__dirname).join(', ')}`);
+    }
+
+    app.use(express.static(distPath));
+    
+    // Explicitly handle JS and CSS for Vite
+    app.use('/assets', express.static(path.join(distPath, 'assets')));
+
+    app.get("*", (req, res) => {
+      console.log(`Fallback route hit for: ${req.url}`);
+      const indexFile = path.resolve(distPath, "index.html");
+      if (fs.existsSync(indexFile)) {
+        res.sendFile(indexFile);
+      } else {
+        res.status(404).send("Production build not found. Did you run 'npm run build'?");
+      }
+    });
+  } else {
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { 
@@ -28,19 +54,6 @@ async function startServer() {
     });
     app.use(vite.middlewares);
     console.log(`Development server running at http://0.0.0.0:3000`);
-  } else {
-    const distPath = path.resolve(__dirname, "dist");
-    app.use(express.static(distPath));
-    
-    // Specifically handle /assets route if needed, though express.static should cover it
-    app.use('/assets', express.static(path.join(distPath, 'assets')));
-
-    // Serve index.html for all other routes (SPA fallback)
-    app.get("*", (req, res) => {
-      res.sendFile(path.resolve(distPath, "index.html"));
-    });
-    console.log(`Production server running at http://0.0.0.0:${PORT}`);
-    console.log(`Serving static files from: ${distPath}`);
   }
 
   app.listen(PORT, "0.0.0.0", () => {

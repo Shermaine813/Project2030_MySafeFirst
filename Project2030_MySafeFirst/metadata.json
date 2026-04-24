@@ -1,0 +1,9 @@
+{
+  "name": "MySafeFirst",
+  "description": "Adaptive Agentic System for scam victims in Malaysia. Real-time forensics, crisis management, and guided recovery.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": []
+}

@@ -7,7 +7,6 @@
     "dev": "tsx server.ts",
     "build": "vite build && tsc --project tsconfig.server.json",
     "start": "NODE_ENV=production node dist/server.js",
-    "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
   },

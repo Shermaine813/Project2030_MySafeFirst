@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
+    "prebuild": "rm -rf dist",
     "build": "vite build && tsc --project tsconfig.server.json",
     "start": "NODE_ENV=production node dist/server.js",
-    "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
   },
   "dependencies": {

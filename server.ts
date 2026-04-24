@@ -8,41 +8,41 @@ const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
-  // We use process.env.PORT if available (e.g. for Cloud Run) 
-  // but fallback to 3000 for the platform's standard environment.
-  const PORT = Number(process.env.PORT) || 3000;
+  // Cloud Run uses the PORT environment variable
+  const PORT = Number(process.env.PORT) || 8080;
 
-  // Add API routes here if needed
+  // API Health Check
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
   });
 
   if (process.env.NODE_ENV === "production") {
+    // Vite build output is in the 'dist' folder
     const distPath = path.resolve(__dirname, "dist");
     
-    // Debug logging to help identify path issues in Cloud Run
     console.log(`Production mode: serving from ${distPath}`);
     
     if (!fs.existsSync(distPath)) {
       console.error(`ERROR: Static directory not found: ${distPath}`);
-      console.log(`Current directory contents: ${fs.readdirSync(__dirname).join(', ')}`);
     }
 
+    // Serve the static files from dist
     app.use(express.static(distPath));
     
-    // Explicitly handle JS and CSS for Vite
+    // Serve the assets folder specifically
     app.use('/assets', express.static(path.join(distPath, 'assets')));
 
+    // Catch-all route to serve index.html for the React SPA
     app.get("*", (req, res) => {
-      console.log(`Fallback route hit for: ${req.url}`);
       const indexFile = path.resolve(distPath, "index.html");
       if (fs.existsSync(indexFile)) {
         res.sendFile(indexFile);
       } else {
-        res.status(404).send("Production build not found. Did you run 'npm run build'?");
+        res.status(404).send("Build files not found. Ensure 'npm run build' was executed.");
       }
     });
   } else {
+    // Development mode using Vite middleware
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { 
